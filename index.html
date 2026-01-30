@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Happy Birthday ❤️</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Outfit:wght@200;400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet"> 
+
+<!-- GSAP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<!-- Canvas Confetti -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+<style>
+:root {
+    --bg-dark: #050510;
+    --acc-pink: #ff2a6d;
+    --acc-purple: #bd00ff;
+    --acc-gold: #ffd700;
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --font-heading: 'Outfit', sans-serif;
+    --font-hand: 'Dancing Script', cursive;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; user-select:none; }
+body { background-color: var(--bg-dark); font-family: var(--font-heading); color:#fff; overflow:hidden; height:100vh; }
+
+#bgCanvas { position: fixed; top:0; left:0; width:100%; height:100%; z-index:-1; }
+
+.center-stage { position: relative; z-index: 10; display:flex; flex-direction: column; align-items:center; justify-content:center; height:100vh; perspective:1000px; }
+
+.glass-card { background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+border: 1px solid var(--glass-border); border-radius: 20px; padding: 3rem; text-align:center;
+box-shadow: 0 0 40px rgba(189,0,255,0.2), inset 0 0 20px rgba(255,255,255,0.05); transform-style: preserve-3d; transition: transform 0.1s ease-out; max-width:90%; width:400px; }
+
+h1.hero-title { font-size:3.5rem; font-weight:700; background:linear-gradient(to right,#fff,#ff2a6d,#bd00ff); -webkit-background-clip:text; background-clip:text; color:transparent; margin-bottom:20px; line-height:1.1; text-shadow:0 0 30px rgba(189,0,255,0.5); }
+
+.clock-container { margin:30px 0; display:flex; justify-content:center; gap:15px; }
+.time-box { display:flex; flex-direction:column; align-items:center; }
+.time-val { font-size:2.5rem; font-weight:200; font-variant-numeric:tabular-nums; color: var(--acc-gold); text-shadow:0 0 10px rgba(255,215,0,0.5); }
+.time-lbl { font-size:0.7rem; text-transform:uppercase; letter-spacing:2px; color: rgba(255,255,255,0.6); }
+
+.glow-btn { position: relative; padding:15px 40px; font-size:1.2rem; color:#fff; background:transparent; border:none; border-radius:50px; cursor:pointer; overflow:hidden; transition:0.4s; margin-top:20px; font-weight:bold; letter-spacing:1px; display:none; box-shadow:0 0 20px rgba(255,42,109,0.5); }
+.glow-btn::before { content:''; position:absolute; top:0; left:0; width:100%; height:100%; background:linear-gradient(45deg,#ff2a6d,#bd00ff); z-index:-1; transition:0.4s; }
+.glow-btn:hover { transform:scale(1.05); box-shadow:0 0 50px rgba(255,42,109,0.8); }
+.glow-btn:hover::before { filter:brightness(1.2); }
+
+#letterOverlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:100; display:flex; justify-content:center; align-items:center; opacity:0; pointer-events:none; backdrop-filter:blur(5px); }
+
+.paper { background:#fff0f5; color:#333; width:90%; max-width:600px; min-height:400px; padding:50px; border-radius:5px; box-shadow:0 0 100px rgba(255,255,255,0.2); position:relative; transform: translateY(100px) scale(0.8); opacity:0; font-family:var(--font-hand); overflow-y:auto; max-height:80vh; }
+.paper::before { content:''; position:absolute; top:0; left:0; width:100%; height:5px; background: linear-gradient(to right, var(--acc-pink), var(--acc-gold)); }
+.letter-content { font-size:1.6rem; line-height:1.6; }
+.cursor { display:inline-block; width:2px; height:1.4rem; background:#333; animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity:0; } }
+
+#musicToggle { position:fixed; bottom:20px; left:20px; color:rgba(255,255,255,0.5); cursor:pointer; font-size:24px; z-index:200; transition:0.3s; }
+#musicToggle:hover { color:#fff; transform:scale(1.1); }
+
+.balloon { position:fixed; bottom:-100px; width:30px; height:40px; background: var(--acc-pink); border-radius:50%; animation: floatBalloon 5s ease-in infinite; z-index:5; opacity:0.8; }
+.balloon::before { content:''; position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); width:2px; height:30px; background: rgba(255,255,255,0.5); }
+@keyframes floatBalloon { 0% { transform:translateY(0) rotate(0deg); opacity:1; } 100% { transform:translateY(-120vh) rotate(20deg); opacity:0; } }
+
+@media screen and (max-width:600px) { h1.hero-title { font-size:2.5rem; } .glass-card { padding:2rem; width:90%; } .paper { padding:30px; } .letter-content { font-size:1.3rem; } }
+
+</style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<audio id="bgMusic" loop>
+  <source src="https://assets.mixkit.co/music/preview/mixkit-romantic-piano-melody-1006.mp3" type="audio/mp3">
+</audio>
+<div id="musicToggle">🔇</div>
+
+<div class="center-stage" id="stage">
+  <div class="glass-card" id="card">
+    <h1 class="hero-title" id="mainTitle">Waiting...</h1>
+    <div class="clock-container" id="clock">
+      <div class="time-box"><span class="time-val" id="d">00</span><span class="time-lbl">Days</span></div>
+      <div class="time-box"><span class="time-val" id="h">00</span><span class="time-lbl">Hrs</span></div>
+      <div class="time-box"><span class="time-val" id="m">00</span><span class="time-lbl">Min</span></div>
+      <div class="time-box"><span class="time-val" id="s">00</span><span class="time-lbl">Sec</span></div>
+    </div>
+    <p style="opacity:0.7; margin-bottom:10px;">Until your moment arrives</p>
+    <button class="glow-btn" id="openBtn" onclick="revealLetter()">✨ Open Surprise ✨</button>
+  </div>
+</div>
+
+<div id="letterOverlay">
+  <div class="paper" id="letterPaper">
+    <div class="letter-content" id="typewriterBody"></div>
+    <div style="text-align:right; margin-top:30px; color:var(--acc-pink)">— Always Yours</div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  const currentYear = new Date().getFullYear();
+  let targetDate = new Date(currentYear, 0, 31, 0, 0, 0); // Jan 31, 00:00
+  if (new Date() > targetDate) targetDate = new Date(currentYear+1,0,31,0,0,0);
+
+  const LETTER_TEXT = `
+My Dearest,
+
+Tonight, the stars shine a little brighter because today, you were born. ✨
+
+This world became softer, warmer, and infinitely more beautiful the moment you arrived.
+
+I hope this year brings you as much joy as you bring to everyone around you.
+
+Remember that you are loved beyond measure.
+
+Happy Birthday love! 🎂
+`;
+
+  // Canvas and countdown same as previous code
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  let width, height;
+  let particles = [];
+
+  function resize() { width=canvas.width=window.innerWidth; height=canvas.height=window.innerHeight; }
+  window.addEventListener('resize', resize); resize();
+
+  class Particle {
+    constructor() { this.x=Math.random()*width; this.y=Math.random()*height; this.vx=(Math.random()-0.5)*0.5; this.vy=(Math.random()-0.5)*0.5; this.size=Math.random()*2; this.color=Math.random()>0.5?'#ff2a6d':'#bd00ff'; this.alpha=Math.random(); }
+    update() { this.x+=this.vx; this.y+=this.vy; if(this.x<0)this.x=width;if(this.x>width)this.x=0;if(this.y<0)this.y=height;if(this.y>height)this.y=0; this.alpha += (Math.random()-0.5)*0.02; this.alpha=Math.min(Math.max(this.alpha,0),1);}
+    draw(){ctx.globalAlpha=this.alpha; ctx.fillStyle=this.color; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill();}
+  }
+
+  for(let i=0;i<100;i++) particles.push(new Particle());
+  function animateBg(){ ctx.clearRect(0,0,width,height); particles.forEach(p=>{p.update();p.draw();}); requestAnimationFrame(animateBg);}
+  animateBg();
+
+  const card=document.getElementById('card');
+  document.addEventListener('mousemove',(e)=>{ const xAxis=(window.innerWidth/2 - e.pageX)/25; const yAxis=(window.innerHeight/2 - e.pageY)/25; gsap.to(card,{rotationY:xAxis, rotationX:yAxis, duration:0.5, ease:'power1.out'}); });
+
+  const els={d:document.getElementById('d'),h:document.getElementById('h'),m:document.getElementById('m'),s:document.getElementById('s')};
+  const mainTitle=document.getElementById('mainTitle'); 
+  const openBtn=document.getElementById('openBtn'); 
+  const music=document.getElementById('bgMusic'); 
+  const musicToggle=document.getElementById('musicToggle');
+
+  musicToggle.addEventListener('click',()=>{
+    if(music.paused){music.play();musicToggle.innerText='🎵'; musicToggle.style.opacity='1';}
+    else {music.pause(); musicToggle.innerText='🔇'; musicToggle.style.opacity='0.5';}
+  });
+
+  function updateTimer(){
+    const now=new Date();
+    const diff=targetDate-now;
+    if(diff<=0){ clearInterval(timerInterval); els.d.innerText=els.h.innerText=els.m.innerText=els.s.innerText="00"; startCelebration(); return; }
+    els.d.innerText=Math.floor(diff/(1000*60*60*24)).toString().padStart(2,'0');
+    els.h.innerText=Math.floor((diff%(1000*60*60*24))/(1000*60*60)).toString().padStart(2,'0');
+    els.m.innerText=Math.floor((diff%(1000*60*60))/(1000*60)).toString().padStart(2,'0');
+    els.s.innerText=Math.floor((diff%(1000*60))/1000).toString().padStart(2,'0');
+  }
+  const timerInterval=setInterval(updateTimer,1000); updateTimer();
+
+  function startCelebration(){
+    mainTitle.innerText="Happy Birthday!"; mainTitle.style.fontSize="4rem";
+    gsap.to(mainTitle,{scale:1.1, duration:0.8, yoyo:true, repeat:-1});
+    openBtn.style.display="block"; gsap.from(openBtn,{y:20,opacity:0,duration:1,ease:"elastic.out(1,0.3)"});
+    let duration=5*1000; let end=Date.now()+duration;
+    (function frame(){ confetti({particleCount:5,angle:60,spread:55,origin:{x:0},colors:['#ff2a6d','#bd00ff','#ffd700']}); confetti({particleCount:5,angle:120,spread:55,origin:{x:1},colors:['#ff2a6d','#bd00ff','#ffd700']}); if(Date.now()<end)requestAnimationFrame(frame); }());
+    launchBalloons();
+  }
+
+  function launchBalloons(){
+    for(let i=0;i<30;i++){
+      const b=document.createElement('div'); b.className='balloon';
+      b.style.left=Math.random()*100+'vw';
+      b.style.background=['#ff2a6d','#bd00ff','#ffd700','#00f3ff'][Math.floor(Math.random()*4)];
+      b.style.animationDuration=(Math.random()*3+4)+'s';
+      b.style.animationDelay=Math.random()*2+'s';
+      document.body.appendChild(b);
+    }
+  }
+
+  window.revealLetter=function(){
+    music.play().catch(()=>{}); musicToggle.innerText='🎵';
+    gsap.to('#stage',{opacity:0,scale:0.8,duration:0.5,onComplete:()=>{document.getElementById('stage').style.display='none';}});
+    const overlay=document.getElementById('letterOverlay'); overlay.style.pointerEvents='all'; gsap.to(overlay,{opacity:1,duration:0.5});
+    const paper=document.getElementById('letterPaper'); gsap.to(paper,{y:0,scale:1,opacity:1,duration:0.8,delay:0.3,ease:'back.out(1.7)'});
+    setTimeout(()=>{ typeWriter(LETTER_TEXT,0); },1200);
+  };
+
+  function typeWriter(text,i){ const body=document.getElementById('typewriterBody'); if(i<text.length){ body.innerHTML=text.substring(0,i+1).replace(/\n/g,"<br>")+'<span class="cursor"></span>'; requestAnimationFrame(()=>typeWriter(text,i+1));} else { body.innerHTML=text.replace(/\n/g,"<br>"); } }
+
+});
+</script>
+
+</body>
+</html>
